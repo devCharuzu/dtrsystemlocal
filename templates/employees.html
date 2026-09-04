@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Employee Directory{% endblock %}
+{% block content %}
+<div class="row g-3">
+
+  <!-- Add form -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-person-plus me-2" style="color:var(--brand)"></i>Add Employee
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/employees/add">
+          <div class="mb-2">
+            <label class="form-label">Employee Number</label>
+            <input type="text" name="employee_number" class="form-control" placeholder="e.g. 123456" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="full_name" class="form-control" placeholder="Last, First Middle" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Position</label>
+            <input type="text" name="position" class="form-control" placeholder="e.g. Administrative Aide IV" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Office / Division</label>
+            <input type="text" name="office_division" class="form-control" placeholder="e.g. Finance Division" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Employment Type</label>
+            <div class="d-flex gap-3 mt-1">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="employment_type" id="type-perm-add" value="PERMANENT" checked />
+                <label class="form-check-label" for="type-perm-add"><span class="badge bg-primary">Permanent</span></label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="employment_type" id="type-cos-add" value="COS_JO" />
+                <label class="form-check-label" for="type-cos-add"><span class="badge bg-warning text-dark">COS / JO</span></label>
+              </div>
+            </div>
+            <div class="form-text mt-1" style="font-size:.76rem">
+              <strong>Permanent</strong> — full-month DTR &nbsp;|&nbsp; <strong>COS/JO</strong> — semi-monthly DTR
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-save me-1"></i>Save Employee
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employee list -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-people me-2" style="color:var(--brand)"></i>Employees <span class="badge bg-secondary ms-1">{{ employees|length }}</span></span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-secondary active" id="filter-all"   onclick="filterTable('all')">All</button>
+          <button class="btn btn-sm btn-outline-primary"          id="filter-perm"  onclick="filterTable('PERMANENT')">Permanent</button>
+          <button class="btn btn-sm btn-outline-warning"          id="filter-cosjo" onclick="filterTable('COS_JO')">COS / JO</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" id="emp-table">
+          <thead class="table-light">
+            <tr>
+              <th>Emp. No.</th>
+              <th>Full Name</th>
+              <th>Position</th>
+              <th>Division</th>
+              <th class="text-center">Type</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in employees %}
+            <tr data-emp-type="{{ emp.employment_type }}">
+              <td class="font-monospace text-muted small">{{ emp.employee_number }}</td>
+              <td class="fw-semibold">{{ emp.full_name }}</td>
+              <td class="text-muted small">{{ emp.position }}</td>
+              <td class="text-muted small">{{ emp.office_division }}</td>
+              <td class="text-center">
+                {% if emp.employment_type == 'COS_JO' %}
+                  <span class="badge bg-warning text-dark">COS/JO</span>
+                {% else %}
+                  <span class="badge bg-primary">Permanent</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-1" type="button"
+                        data-bs-toggle="modal" data-bs-target="#editEmp{{ emp.id }}" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form class="d-inline" method="POST" action="/employees/delete/{{ emp.id }}"
+                      onsubmit="return confirm('Delete this employee?')">
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editEmp{{ emp.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius:var(--radius)">
+                  <form method="POST" action="/employees/edit/{{ emp.id }}">
+                    <div class="modal-header" style="border-bottom:1px solid var(--border)">
+                      <h6 class="modal-title fw-bold">Edit Employee</h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-2">
+                        <label class="form-label">Employee Number</label>
+                        <input type="text" name="employee_number" class="form-control" value="{{ emp.employee_number }}" required />
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ emp.full_name }}" required />
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label">Position</label>
+                        <input type="text" name="position" class="form-control" value="{{ emp.position or '' }}" />
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label">Office / Division</label>
+                        <input type="text" name="office_division" class="form-control" value="{{ emp.office_division or '' }}" />
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label">Employment Type</label>
+                        <div class="d-flex gap-3 mt-1">
+                          <div class="form-check">
+                            <input class="form-check-input" type="radio" name="employment_type"
+                                   id="type-perm-{{ emp.id }}" value="PERMANENT"
+                                   {{ 'checked' if emp.employment_type != 'COS_JO' else '' }} />
+                            <label class="form-check-label" for="type-perm-{{ emp.id }}"><span class="badge bg-primary">Permanent</span></label>
+                          </div>
+                          <div class="form-check">
+                            <input class="form-check-input" type="radio" name="employment_type"
+                                   id="type-cos-{{ emp.id }}" value="COS_JO"
+                                   {{ 'checked' if emp.employment_type == 'COS_JO' else '' }} />
+                            <label class="form-check-label" for="type-cos-{{ emp.id }}"><span class="badge bg-warning text-dark">COS / JO</span></label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer" style="border-top:1px solid var(--border)">
+                      <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No employees registered yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function filterTable(type) {
+  document.querySelectorAll('#emp-table tbody tr[data-emp-type]').forEach(row => {
+    row.style.display = (type === 'all' || row.dataset.empType === type) ? '' : 'none';
+  });
+  ['filter-all','filter-perm','filter-cosjo'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  const map = { all:'filter-all', PERMANENT:'filter-perm', COS_JO:'filter-cosjo' };
+  document.getElementById(map[type])?.classList.add('active');
+}
+</script>
+{% endblock %}

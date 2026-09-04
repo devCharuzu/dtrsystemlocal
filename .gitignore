@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Database files (keep locally, don't push)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+
+# VS Code
+.vscode/
+
+# WeasyPrint / PDF temp files
+*.pdf
+
+# Local attendance uploads (keep locally, don't push)
+dat_uploads/
+xls_uploads/
+
+# OS
+.DS_Store
+Thumbs.db

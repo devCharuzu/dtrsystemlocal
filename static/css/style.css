@@ -1,0 +1,315 @@
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --brand:       #3b5bdb;
+  --brand-dark:  #2f4ac0;
+  --brand-light: #eef2ff;
+  --surface:     #f4f6fb;
+  --card-bg:     #ffffff;
+  --border:      #e2e8f0;
+  --text-main:   #1e293b;
+  --text-muted:  #64748b;
+  --danger:      #e03131;
+  --success:     #2f9e44;
+  --warning:     #e67700;
+  --radius:      10px;
+  --shadow-sm:   0 1px 4px rgba(0,0,0,.07);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+body {
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────────── */
+.app-nav {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0 1.25rem;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.app-nav .brand {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--brand);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.app-nav .brand i { font-size: 1.1rem; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.12s, color 0.12s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* ── Page wrapper ───────────────────────────────────────────────────────────── */
+.page { padding: 1.75rem 1.5rem; max-width: 1280px; margin: 0 auto; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────────── */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--card-bg);
+}
+.card-header {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: .75rem 1rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+}
+.card-body { padding: 1rem; }
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.btn { border-radius: 7px; font-size: 0.84rem; font-weight: 500; }
+.btn-primary   { background: var(--brand); border-color: var(--brand); }
+.btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
+.btn-danger    { background: var(--danger); border-color: var(--danger); }
+
+/* ── Forms ──────────────────────────────────────────────────────────────────── */
+.form-control, .form-select {
+  border-radius: 7px;
+  border-color: var(--border);
+  font-size: 0.875rem;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(59,91,219,.12);
+}
+.form-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
+
+/* ── Home cards ─────────────────────────────────────────────────────────────── */
+.home-card {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s, box-shadow .15s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.home-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  color: inherit;
+}
+.home-card .icon { font-size: 2.4rem; margin-bottom: .75rem; display: block; }
+.home-card h5 { font-weight: 700; margin-bottom: .3rem; }
+.home-card p  { font-size: .82rem; color: var(--text-muted); margin: 0; }
+
+/* ── Badge tweaks ───────────────────────────────────────────────────────────── */
+.badge { font-size: .72rem; font-weight: 600; border-radius: 5px; }
+
+/* ── DTR Grid ───────────────────────────────────────────────────────────────── */
+.dtr-table td, .dtr-table th {
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+.dtr-cell {
+  cursor: pointer;
+  min-width: 80px;
+  text-align: center;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.dtr-cell:hover:not(.cell-readonly) { background: var(--brand-light) !important; }
+.dtr-cell.cell-editing { outline: 2px solid var(--brand); background: #fff8e1 !important; }
+.dtr-cell.cell-flagged { background: #ffe0e0 !important; color: var(--danger); font-weight: 600; }
+.dtr-cell.cell-readonly { cursor: default; background: #f8f9fa; color: #bbb; }
+.cell-editor-input { font-size: 0.82rem; padding: 2px 4px; height: 28px; }
+.slot-header { font-size: 0.72rem; color: #aaa; }
+
+/* ── DTR top bar ─────────────────────────────────────────────────────────────── */
+.dtr-topbar {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.topbar-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+}
+.topbar-identity { flex-wrap: nowrap; min-width: 0; }
+.topbar-actions  { flex-wrap: wrap; }
+.dtr-topbar .emp-info { min-width: 0; }
+.dtr-topbar .emp-info h6 { margin: 0; font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dtr-topbar .emp-info small { color: var(--text-muted); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* ── Verifier strip ──────────────────────────────────────────────────────────── */
+.verifier-strip {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .6rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.verifier-strip label { font-size: .78rem; font-weight: 600; margin: 0; white-space: nowrap; }
+.verifier-strip .form-select { font-size: .82rem; height: 34px; padding-top: 4px; padding-bottom: 4px; }
+.verifier-strip .toggle-add { font-size: .78rem; color: var(--brand); cursor: pointer; text-decoration: none; white-space: nowrap; }
+.verifier-add-row { display: none; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .5rem 1rem .6rem; border-top: 1px solid var(--border); }
+.verifier-add-row.open { display: flex; }
+.verifier-add-row .form-control { font-size: .82rem; height: 34px; }
+
+/* ── Upload drop zone ────────────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+.drop-zone i { font-size: 2.5rem; color: var(--brand); }
+
+/* ── Table tweaks ────────────────────────────────────────────────────────────── */
+.table { font-size: .84rem; }
+.table thead th { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+
+/* ── Toasts / alerts ─────────────────────────────────────────────────────────── */
+.alert { border-radius: var(--radius); font-size: .84rem; }
+
+/* ── Nav mobile toggle ───────────────────────────────────────────────────────── */
+.nav-toggle { display: none; background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; }
+
+/* ── Responsive breakpoints ──────────────────────────────────────────────────── */
+
+/* Tablet and below (≤768px) */
+@media (max-width: 768px) {
+  .page { padding: 1rem .75rem; }
+
+  /* Nav */
+  .nav-toggle { display: block; }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 54px; left: 0; right: 0;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    padding: .5rem;
+    z-index: 999;
+  }
+  .nav-links.open { display: flex; }
+
+  /* Home cards: stack to 1 column */
+  .home-cards-grid { grid-template-columns: 1fr !important; gap: .75rem !important; }
+
+  /* Employees page: stack form + table */
+  .emp-layout { flex-direction: column !important; }
+  .emp-layout > * { width: 100% !important; }
+
+  /* DTR topbar: let actions wrap naturally */
+  .topbar-identity { flex-wrap: wrap; }
+  .topbar-actions  { flex-wrap: wrap; gap: .5rem; }
+  .topbar-actions .ms-auto { margin-left: 0 !important; }
+
+  /* Verifier strip: stack */
+  .verifier-strip { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .verifier-strip .form-select { max-width: 100% !important; width: 100%; }
+  .verifier-strip .toggle-add { margin-left: 0 !important; }
+  .verifier-add-row .form-control { max-width: 100% !important; width: 100%; }
+
+  /* DTR table: smaller text, tighter cells */
+  .dtr-table td, .dtr-table th { font-size: .75rem; padding: .25rem .35rem; }
+  .dtr-cell { min-width: 60px; }
+
+  /* Audit table: hide less-critical column */
+  .audit-col-date-changed { display: none; }
+}
+
+/* Mobile (≤480px) */
+@media (max-width: 480px) {
+  .page { padding: .75rem .5rem; }
+
+  /* Topbar: stack both rows vertically */
+  .dtr-topbar { padding: .6rem .75rem; }
+  .topbar-identity, .topbar-actions { flex-direction: column; align-items: flex-start; }
+  .topbar-identity .ms-auto { margin-left: 0 !important; }
+  .topbar-actions .d-flex { flex-wrap: wrap; }
+  #admin-user { width: 100% !important; }
+
+  /* Export button full width */
+  .topbar-actions > .btn { width: 100%; }
+
+  /* DTR table: even tighter */
+  .dtr-table td, .dtr-table th { font-size: .7rem; padding: .2rem .25rem; }
+  .dtr-cell { min-width: 48px; white-space: normal; }
+
+  /* Quick period buttons: wrap */
+  .quick-period-btns { flex-wrap: wrap !important; }
+  .quick-period-btns .btn { flex: 1 1 45%; }
+
+  /* Open DTR Grid button */
+  #open-all-btn { font-size: .8rem; }
+
+  /* Audit table: hide slot column too on very small screens */
+  .audit-col-slot { display: none; }
+  .audit-col-original, .audit-col-new { font-size: .72rem; }
+
+  /* Home cards */
+  .home-card { padding: 1.25rem 1rem; }
+  .home-card .icon { font-size: 1.8rem; }
+}
+
+/* Large screens (≥1400px): wider content area */
+@media (min-width: 1400px) {
+  .page { max-width: 1440px; padding: 2rem 2.5rem; }
+}

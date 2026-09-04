@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}DTR System — Home{% endblock %}
+{% block content %}
+<div style="max-width:680px; margin:3rem auto; text-align:center;">
+  <div style="margin-bottom:2rem;">
+    <div style="font-size:2.8rem;"><i class="bi bi-calendar-check-fill" style="color:var(--brand)"></i></div>
+    <h2 style="font-weight:800;margin:.5rem 0 .3rem;font-size:1.6rem;">CSC Form 48 DTR System</h2>
+    <p style="color:var(--text-muted);font-size:.9rem;">Regional Office XIII — Daily Time Record Management</p>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <a href="/employees/" class="home-card">
+        <span class="icon"><i class="bi bi-people-fill" style="color:var(--brand)"></i></span>
+        <h5>Employees</h5>
+        <p>Register and manage staff, positions, and employment types.</p>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="/datlogs/" class="home-card">
+        <span class="icon"><i class="bi bi-file-earmark-arrow-up-fill" style="color:var(--success)"></i></span>
+        <h5>Upload Biometric Log</h5>
+        <p>Ingest <code>attlog.dat</code> files from the fingerprint device.</p>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="/dtr/" class="home-card">
+        <span class="icon"><i class="bi bi-table" style="color:var(--danger)"></i></span>
+        <h5>DTR Grid & Export</h5>
+        <p>Review, correct, and export CSC Form 48 PDFs.</p>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

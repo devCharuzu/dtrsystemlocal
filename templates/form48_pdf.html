@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSC Form 48</title>
+</head>
+<body>
+<div class="wrapper">
+  {% for copy_no in [1, 2] %}
+  <section class="form-copy">
+    <div class="header-block">
+      <p class="title bold">DAILY TIME RECORD</p>
+      <p class="emp-name bold">{{ employee.full_name }}</p>
+      <p class="name-label">(Name)</p>
+      <p class="date-from">Date from :&nbsp;&nbsp;<span class="bold">{{ period }}</span></p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2" class="col-day">Day</th>
+          <th colspan="2">AM</th>
+          <th colspan="2">PM</th>
+          <th colspan="2">Under Time</th>
+        </tr>
+        <tr>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Hours</th>
+          <th>Minutes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dates %}
+        {% set row = dtr_data.get(d.isoformat(), {}) %}
+        {% set dow = d.weekday() %}
+        {% set is_saturday = dow == 5 %}
+        {% set is_sunday = dow == 6 %}
+        <tr class="{{ 'sunday-row' if is_sunday else '' }}">
+          <td class="day-num">{{ d.day }}</td>
+          {% if is_saturday %}
+          <td colspan="4" class="weekend-label">S a t u r d a y</td>
+          {% elif is_sunday %}
+          <td colspan="4" class="weekend-label sunday-label">S u n d a y</td>
+          {% else %}
+          {% for slot in ['AM_IN','AM_OUT','PM_IN','PM_OUT'] %}
+          {% set tv = row.get(slot, '') %}
+          {% if tv %}
+            {% set _hour = tv.split(':')[0] | int %}
+            {% if slot in ('PM_IN', 'PM_OUT') %}
+              {% set tv_display = tv ~ ' PM' %}
+            {% elif _hour == 12 %}
+              {% set tv_display = tv ~ ' PM' %}
+            {% else %}
+              {% set tv_display = tv ~ ' AM' %}
+            {% endif %}
+          {% else %}
+            {% set tv_display = '' %}
+          {% endif %}
+          <td class="time-cell">{{ tv_display }}</td>
+          {% endfor %}
+          {% endif %}
+          {% if is_saturday or is_sunday %}
+          <td></td>
+          <td></td>
+          {% else %}
+          {% set ut = undertime_hm(row) %}
+          <td class="ut-cell">{{ ut[0] if ut[2] and ut[0] else '' }}</td>
+          <td class="ut-cell">{{ ut[1] if ut[2] else '' }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="bottom-block">
+      <div class="legend-line"></div>
+      <div class="legend">[T]-Travel&nbsp;&nbsp;&nbsp;[L]-Leave&nbsp;&nbsp;&nbsp;[H]-Holiday&nbsp;&nbsp;&nbsp;[OB]- Official Business</div>
+      <div class="legend-line"></div>
+
+      <p class="certification">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I CERTIFY on my honor that above is a true and correct
+        report of the hours of work performed, record of which was made
+        daily at the time of arrival at and departure from office.
+      </p>
+
+      <div class="sig-block">
+        <div class="signature-space"></div>
+        <span class="bold">{{ employee.full_name }}</span>
+        <div class="sig-line-thin"></div>
+      </div>
+
+      <p class="verified">Verified as to the prescribed office hours.</p>
+
+      <div class="sig-block verifier">
+        <div class="signature-space"></div>
+        <span class="bold verifier-name">{{ certifier.name or '' }}</span>
+        <div class="verifier-pos">{{ certifier.position or 'In-Charge' }}</div>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+</body>
+</html>

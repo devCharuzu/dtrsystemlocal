@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}DTR Grid — Select Employee{% endblock %}
+{% block content %}
+<div style="max-width:520px; margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-table me-2" style="color:var(--danger)"></i>Open DTR Grid
+    </div>
+    <div class="card-body">
+
+      <!-- Quick period buttons -->
+      <div class="mb-3">
+        <label class="form-label">Quick Period</label>
+        <div class="d-flex gap-2 quick-period-btns">
+          <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setQuickPeriod(1,15)">
+            1–15 <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">COS/JO</span>
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setQuickPeriod(16,null)">
+            16–End <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">COS/JO</span>
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setQuickPeriod(1,null,true)">
+            Full Month <span class="badge bg-primary ms-1" style="font-size:.65rem">Permanent</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col">
+          <label class="form-label">Year</label>
+          <input type="number" id="year" class="form-control" value="{{ now.year }}" min="2020" max="2035" />
+        </div>
+        <div class="col">
+          <label class="form-label">Month</label>
+          <select id="month" class="form-select">
+            {% set months = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+            {% for m in months %}
+            <option value="{{ loop.index }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col">
+          <label class="form-label">Start Day</label>
+          <input type="number" id="start-day" class="form-control" value="1" min="1" max="31" />
+        </div>
+        <div class="col">
+          <label class="form-label">End Day</label>
+          <input type="number" id="end-day" class="form-control" value="15" min="1" max="31" />
+        </div>
+      </div>
+
+      <!-- hidden select keeps filter logic intact -->
+      <select id="emp-select" class="d-none">
+        {% for emp in employees %}
+        <option value="{{ emp.id }}" data-type="{{ emp.employment_type }}"></option>
+        {% endfor %}
+      </select>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger flex-fill" id="open-all-btn" onclick="openAllGrid()">
+          <i class="bi bi-table me-1"></i>Open DTR Grid — <span id="open-all-label"></span>
+        </button>
+        <button class="btn btn-outline-danger" id="batch-export-btn" onclick="batchExport()" title="Export all employee DTRs for the selected period as one PDF">
+          <i class="bi bi-file-earmark-pdf me-1"></i>Batch Export
+        </button>
+      </div>
+
+      <div id="batch-status" class="mt-2 d-none">
+        <div class="alert alert-info py-2 mb-0 small">
+          <i class="bi bi-hourglass-split me-1"></i>
+          <span id="batch-status-text">Generating PDF…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-muted small text-center mt-2">
+    <i class="bi bi-info-circle me-1"></i>
+    1–15 / 16–End filters to <span class="badge bg-warning text-dark">COS/JO</span> employees.
+    Full Month filters to <span class="badge bg-primary">Permanent</span> employees.
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function daysInMonth(y,m) { return new Date(y,m,0).getDate(); }
+
+function setQuickPeriod(start, end, isFullMonth=false) {
+  const y=parseInt(document.getElementById('year').value);
+  const m=parseInt(document.getElementById('month').value);
+  document.getElementById('start-day').value = start;
+  document.getElementById('end-day').value   = end || daysInMonth(y,m);
+  applyEmployeeFilter();
+}
+
+function getPeriodType() {
+  const y=parseInt(document.getElementById('year').value);
+  const m=parseInt(document.getElementById('month').value);
+  const s=parseInt(document.getElementById('start-day').value);
+  const e=parseInt(document.getElementById('end-day').value);
+  const last=daysInMonth(y,m);
+  if (s===1 && e===15)    return 'COS_JO';
+  if (s===16 && e===last) return 'COS_JO';
+  if (s===1  && e===last) return 'PERMANENT';
+  return 'ALL';
+}
+
+function getVisibleEmployees() {
+  return Array.from(document.getElementById('emp-select').options)
+    .filter(o => o.value && o.style.display !== 'none');
+}
+
+function applyEmployeeFilter() {
+  const type=getPeriodType();
+  const select=document.getElementById('emp-select');
+  Array.from(select.options).forEach(opt => {
+    if (!opt.value) { opt.style.display=''; return; }
+    opt.style.display = (type==='ALL' || opt.dataset.type===type) ? '' : 'none';
+  });
+  const sel=select.options[select.selectedIndex];
+  if (sel && sel.value && sel.style.display==='none') select.value='';
+
+  const label = document.getElementById('open-all-label');
+  const count = getVisibleEmployees().length;
+  if (type==='COS_JO')      label.textContent = `COS/JO (${count})`;
+  else if (type==='PERMANENT') label.textContent = `Permanent (${count})`;
+  else                         label.textContent = `All (${count})`;
+}
+
+function openGrid() {
+  const empId=document.getElementById('emp-select').value;
+  const year=document.getElementById('year').value;
+  const month=document.getElementById('month').value;
+  const start=document.getElementById('start-day').value;
+  const end=document.getElementById('end-day').value;
+  if (!empId) { alert('Please select an employee.'); return; }
+  window.location.href=`/dtr/grid?employee_id=${empId}&year=${year}&month=${month}&start_day=${start}&end_day=${end}`;
+}
+
+function openAllGrid() {
+  const visible = getVisibleEmployees();
+  if (!visible.length) { alert('No employees in the current filter.'); return; }
+  const year=document.getElementById('year').value;
+  const month=document.getElementById('month').value;
+  const start=document.getElementById('start-day').value;
+  const end=document.getElementById('end-day').value;
+  window.location.href=`/dtr/grid?employee_id=${visible[0].value}&year=${year}&month=${month}&start_day=${start}&end_day=${end}`;
+}
+
+async function batchExport() {
+  const type = getPeriodType();
+  if (type === 'ALL') { alert('Please select a specific period (1–15, 16–End, or Full Month) to batch export.'); return; }
+  const year  = document.getElementById('year').value;
+  const month = document.getElementById('month').value;
+  const start = document.getElementById('start-day').value;
+  const end   = document.getElementById('end-day').value;
+  const label = type === 'COS_JO' ? 'COS/JO' : 'Permanent';
+  const count = getVisibleEmployees().length;
+
+  const statusDiv  = document.getElementById('batch-status');
+  const statusText = document.getElementById('batch-status-text');
+  const btn = document.getElementById('batch-export-btn');
+
+  statusDiv.classList.remove('d-none');
+  statusText.textContent = `Generating PDF for ${count} ${label} employee(s)… this may take a moment.`;
+  btn.disabled = true;
+
+  try {
+    const url = `/dtr/pdf/batch?employment_type=${type}&year=${year}&month=${month}&start_day=${start}&end_day=${end}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(err.detail || res.statusText);
+    }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1]
+                 || `DTR Batch - ${label}.pdf`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    statusText.textContent = `Done! ${count} DTR(s) exported.`;
+    statusDiv.querySelector('.alert').className = 'alert alert-success py-2 mb-0 small';
+  } catch(e) {
+    statusText.textContent = `Export failed: ${e.message}`;
+    statusDiv.querySelector('.alert').className = 'alert alert-danger py-2 mb-0 small';
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => {
+      statusDiv.classList.add('d-none');
+      statusDiv.querySelector('.alert').className = 'alert alert-info py-2 mb-0 small';
+    }, 4000);
+  }
+}
+
+const now=new Date();
+document.getElementById('year').value=now.getFullYear();
+document.getElementById('month').value=now.getMonth()+1;
+document.getElementById('end-day').value=daysInMonth(now.getFullYear(),now.getMonth()+1);
+['start-day','end-day','year','month'].forEach(id => document.getElementById(id).addEventListener('change',applyEmployeeFilter));
+applyEmployeeFilter();
+</script>
+{% endblock %}

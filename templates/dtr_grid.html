@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}DTR Grid{% endblock %}
+{% block content %}
+
+<div id="dtr-data"
+     data-employee-id="{{ employee.id }}"
+     data-year="{{ year }}"
+     data-month="{{ month }}"
+     data-start-day="{{ start_day }}"
+     data-end-day="{{ end_day }}"
+     data-month-name="{{ month_name | e }}"
+     data-employee-name="{{ employee.full_name | e }}"
+     hidden></div>
+
+<!-- Top bar -->
+<div class="dtr-topbar">
+  <!-- Row 1: employee identity -->
+  <div class="topbar-row topbar-identity">
+    <div class="emp-info">
+      <h6 class="mb-0">{{ employee.full_name }}
+        {% if employee.employment_type == 'COS_JO' %}
+          <span class="badge bg-warning text-dark ms-1">COS/JO</span>
+        {% else %}
+          <span class="badge bg-primary ms-1">Permanent</span>
+        {% endif %}
+      </h6>
+      <small class="text-muted">{{ employee.employee_number }} · {{ employee.position }} · {{ employee.office_division }}</small>
+    </div>
+    <span class="badge bg-secondary ms-auto" style="font-size:.78rem;white-space:nowrap">{{ dates[0].strftime('%b %d') }} – {{ dates[-1].strftime('%b %d, %Y') }}</span>
+  </div>
+  <!-- Row 2: actions -->
+  <div class="topbar-row topbar-actions">
+    <input type="text" id="admin-user" class="form-control form-control-sm" style="width:140px;flex-shrink:0" placeholder="Your name" value="HR Admin" />
+    <button class="btn btn-danger btn-sm" onclick="exportPDF()">
+      <i class="bi bi-file-pdf me-1"></i>Export PDF
+    </button>
+    <div class="d-flex gap-1 ms-auto">
+      <button class="btn btn-outline-secondary btn-sm" onclick="window.history.back()" title="Back">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      {% if prev_employee %}
+      <a href="/dtr/grid?employee_id={{ prev_employee.id }}&year={{ year }}&month={{ month }}&start_day={{ start_day }}&end_day={{ end_day }}"
+         class="btn btn-outline-primary btn-sm" title="{{ prev_employee.full_name }}">
+        <i class="bi bi-chevron-left"></i> Prev
+      </a>
+      {% else %}
+      <button class="btn btn-outline-primary btn-sm" disabled><i class="bi bi-chevron-left"></i> Prev</button>
+      {% endif %}
+      {% if next_employee %}
+      <a href="/dtr/grid?employee_id={{ next_employee.id }}&year={{ year }}&month={{ month }}&start_day={{ start_day }}&end_day={{ end_day }}"
+         class="btn btn-outline-primary btn-sm" title="{{ next_employee.full_name }}">
+        Next <i class="bi bi-chevron-right"></i>
+      </a>
+      {% else %}
+      <button class="btn btn-outline-primary btn-sm" disabled>Next <i class="bi bi-chevron-right"></i></button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Verifier strip -->
+<div class="verifier-strip">
+  <label>Verifier:</label>
+  <select id="verifier-select" class="form-select" style="max-width:340px" onchange="setDefaultVerifier(true)">
+    <option value="">— None —</option>
+    {% for v in verifiers %}
+    <option value="{{ v.id }}" data-position="{{ v.position }}"
+            {{ 'selected' if default_verifier and v.id == default_verifier.id else '' }}>
+      {{ v.name }} — {{ v.position }}{{ ' ★' if v.is_default else '' }}
+    </option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-outline-secondary btn-sm" onclick="setDefaultVerifier()" title="Set as default">
+    <i class="bi bi-pin-angle"></i> Set Default
+  </button>
+  <a href="#" class="toggle-add ms-auto" onclick="toggleAddVerifier();return false;">
+    <i class="bi bi-plus-circle me-1"></i>Add verifier
+  </a>
+</div>
+<div class="verifier-add-row" id="verifier-add-row">
+  <input type="text" id="new-verifier-name" class="form-control" style="max-width:220px" placeholder="Full name" />
+  <input type="text" id="new-verifier-position" class="form-control" style="max-width:220px" placeholder="Designation" />
+  <button class="btn btn-primary btn-sm" onclick="createVerifier()">
+    <i class="bi bi-save me-1"></i>Save
+  </button>
+  <a href="#" class="text-muted small" onclick="toggleAddVerifier();return false;">Cancel</a>
+</div>
+
+{% if cell_map %}
+<div class="alert alert-light border small py-2 mb-2" style="font-size:.8rem">
+  <i class="bi bi-pencil-square me-1 text-primary"></i>
+  <strong>Double-click</strong> a cell to edit.
+  <span class="badge bg-danger ms-1">Red</span> = collision — enter the correct time manually.
+</div>
+{% endif %}
+
+<div class="table-responsive">
+  <table class="table table-bordered table-sm dtr-table" id="dtr-table">
+    <thead class="table-dark">
+      <tr>
+        <th class="text-center" style="width:55px">Day</th>
+        <th class="text-center" style="width:45px">Date</th>
+        <th class="text-center" colspan="2">AM</th>
+        <th class="text-center" colspan="2">PM</th>
+        <th class="text-center" style="width:75px">Undertime<br><small>(hrs)</small></th>
+      </tr>
+      <tr>
+        <th></th><th></th>
+        <th class="text-center slot-header">Arrival</th>
+        <th class="text-center slot-header">Departure</th>
+        <th class="text-center slot-header">Arrival</th>
+        <th class="text-center slot-header">Departure</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dates %}
+      {% set weekday = d.strftime('%a') %}
+      {% set is_weekend = d.weekday() >= 5 %}
+      {% set day_cells = cell_map.get(d, {}) %}
+      <tr class="{{ 'table-light text-muted' if is_weekend else '' }}" data-date="{{ d.isoformat() }}">
+        <td class="text-center fw-semibold">{{ weekday }}</td>
+        <td class="text-center">{{ d.day }}</td>
+        {% for slot in ['AM_IN','AM_OUT','PM_IN','PM_OUT'] %}
+        {% set cell = day_cells.get(slot) %}
+        {% set val = cell.display_time if cell else '' %}
+        {% set flagged = cell.is_flagged if cell else false %}
+        {% if val %}
+          {% set _hour = val.split(':')[0] | int %}
+          {% if slot in ('PM_IN', 'PM_OUT') %}
+            {% set display_val = val ~ ' PM' %}
+          {% elif _hour == 12 %}
+            {% set display_val = val ~ ' PM' %}
+          {% else %}
+            {% set display_val = val ~ ' AM' %}
+          {% endif %}
+        {% else %}
+          {% set display_val = '' %}
+        {% endif %}
+        <td class="dtr-cell {{ 'cell-flagged' if flagged and not val else '' }} {{ 'cell-readonly' if is_weekend else '' }}"
+            data-slot="{{ slot }}"
+            data-date="{{ d.isoformat() }}"
+            data-employee="{{ employee.id }}"
+            data-original="{{ val }}"
+            {% if not is_weekend %}ondblclick="startEdit(this)"{% endif %}>
+          <span class="cell-display">{{ display_val }}</span>
+        </td>
+        {% endfor %}
+        {% if is_weekend %}
+        <td class="text-center text-muted small ut-cell" data-ut-date="{{ d.isoformat() }}">—</td>
+        {% else %}
+        {% set ut = undertime_map.get(d) %}
+        <td class="text-center small ut-cell {{ 'text-danger fw-semibold' if ut and ut[2] else 'text-muted' }}" data-ut-date="{{ d.isoformat() }}">
+          {%- if ut and ut[2] -%}
+            {%- if ut[0] %}{{ ut[0] }}h {% endif %}{{ ut[1] }}m
+          {%- else -%}—{%- endif -%}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Audit Log -->
+<div class="mt-3">
+  <button class="btn btn-outline-secondary btn-sm" onclick="toggleAudit()">
+    <i class="bi bi-journal-text me-1"></i>Audit Log
+  </button>
+  <div id="audit-panel" class="mt-2 d-none">
+    <div class="card">
+      <div class="card-header">Edit History</div>
+      <div class="table-responsive" style="max-height:260px;overflow-y:auto">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th>Edited By</th>
+              <th>Day &amp; Date</th>
+              <th class="audit-col-slot">Slot</th>
+              <th class="audit-col-original">Original</th>
+              <th class="audit-col-new">New Value</th>
+              <th class="text-end audit-col-date-changed">Date Changed</th>
+            </tr>
+          </thead>
+          <tbody id="audit-body">
+            <tr><td colspan="6" class="text-center text-muted py-3">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inline cell editor -->
+<input type="text" id="cell-editor" class="cell-editor-input form-control form-control-sm"
+       placeholder="H:MM" maxlength="5"
+       style="display:none;position:absolute;z-index:999;width:78px;" />
+
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/dtr_editor.js"></script>
+<script src="/static/js/audit_renderer.js"></script>
+<script>
+const _d = document.getElementById('dtr-data').dataset;
+const EMPLOYEE_ID   = parseInt(_d.employeeId);
+const YEAR          = parseInt(_d.year);
+const MONTH         = parseInt(_d.month);
+const START_DAY     = parseInt(_d.startDay);
+const END_DAY       = parseInt(_d.endDay);
+const MONTH_NAME    = _d.monthName;
+const EMPLOYEE_NAME = _d.employeeName;
+
+function toggleAddVerifier() {
+  document.getElementById('verifier-add-row').classList.toggle('open');
+}
+
+function exportPDF() {
+  const verifierId = document.getElementById('verifier-select').value;
+  const q = verifierId ? `&verifier_id=${encodeURIComponent(verifierId)}` : '';
+  showPDFPreview(`/dtr/pdf?employee_id=${EMPLOYEE_ID}&year=${YEAR}&month=${MONTH}&start_day=${START_DAY}&end_day=${END_DAY}${q}`);
+}
+
+async function showPDFPreview(pdfUrl) {
+  document.getElementById('pdf-preview-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'pdf-preview-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px;overflow-y:auto;';
+  modal.innerHTML = `
+    <div style="width:100%;max-width:960px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h5 style="color:#fff;margin:0;font-size:1rem;"><i class="bi bi-file-pdf me-2 text-danger"></i>PDF Preview</h5>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-danger btn-sm" onclick="triggerDownload()"><i class="bi bi-download me-1"></i>Download</button>
+          <button class="btn btn-outline-light btn-sm" onclick="document.getElementById('pdf-preview-modal').remove()"><i class="bi bi-x-lg"></i></button>
+        </div>
+      </div>
+      <div id="pdf-loading" style="text-align:center;color:#ccc;padding:40px;">
+        <div class="spinner-border text-light mb-3" role="status"></div>
+        <div>Generating preview…</div>
+      </div>
+      <div id="pdf-preview-container" style="display:none;background:#525659;border-radius:6px;padding:16px;">
+        <canvas id="pdf-canvas" style="display:block;margin:0 auto;max-width:100%;border-radius:4px;"></canvas>
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;color:#fff;font-size:.85rem;">
+          <button class="btn btn-sm btn-outline-light" onclick="changePage(-1)"><i class="bi bi-chevron-left"></i></button>
+          <span>Page <span id="pdf-page-num">1</span> of <span id="pdf-page-count">?</span></span>
+          <button class="btn btn-sm btn-outline-light" onclick="changePage(1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+      </div>
+      <p style="color:#888;font-size:.72rem;text-align:center;margin-top:10px;">Press <kbd style="background:#444;color:#fff;padding:1px 5px;border-radius:3px;">Esc</kbd> or click outside to close</p>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.addEventListener('keydown', e => { if (e.key==='Escape') modal.remove(); }, {once:true});
+  document.body.appendChild(modal);
+  try {
+    const res = await fetch(pdfUrl);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    window._pdfBlobUrl = URL.createObjectURL(blob);
+    window._pdfFilename = `${EMPLOYEE_NAME} - ${MONTH_NAME} ${YEAR}.pdf`;
+    if (!window.pdfjsLib) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const ab = await blob.arrayBuffer();
+    window._pdfDoc = await pdfjsLib.getDocument({data:ab}).promise;
+    window._pdfCurrentPage = 1;
+    document.getElementById('pdf-loading').style.display='none';
+    document.getElementById('pdf-preview-container').style.display='block';
+    document.getElementById('pdf-page-count').textContent = window._pdfDoc.numPages;
+    await renderPage(1);
+  } catch(err) {
+    document.getElementById('pdf-loading').innerHTML = `<div class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Preview failed.</div><div class="mt-2"><button class="btn btn-danger btn-sm" onclick="triggerDownload()">Download directly</button></div>`;
+  }
+}
+
+async function renderPage(n) {
+  const page = await window._pdfDoc.getPage(n);
+  const canvas = document.getElementById('pdf-canvas');
+  const cont   = document.getElementById('pdf-preview-container');
+  const scale  = Math.min((cont.clientWidth-32)/page.getViewport({scale:1}).width, 2.5);
+  const vp = page.getViewport({scale});
+  canvas.width=vp.width; canvas.height=vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  document.getElementById('pdf-page-num').textContent=n;
+}
+async function changePage(d) {
+  const n = window._pdfCurrentPage + d;
+  if (n<1||n>window._pdfDoc.numPages) return;
+  window._pdfCurrentPage=n; await renderPage(n);
+}
+function triggerDownload() {
+  if (!window._pdfBlobUrl) return;
+  const a=document.createElement('a'); a.href=window._pdfBlobUrl; a.download=window._pdfFilename||'DTR.pdf'; a.click();
+}
+function loadScript(src) {
+  return new Promise((res,rej)=>{
+    if (document.querySelector(`script[src="${src}"]`)) {res();return;}
+    const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s);
+  });
+}
+
+async function createVerifier() {
+  const name     = document.getElementById('new-verifier-name').value.trim();
+  const position = document.getElementById('new-verifier-position').value.trim();
+  if (!name||!position) { alert('Enter name and designation.'); return; }
+  const res = await fetch('/dtr/verifiers', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,position,make_default:true})});
+  if (!res.ok) { const e=await res.json(); alert(e.detail||'Unable to save.'); return; }
+  const data = await res.json();
+  const select = document.getElementById('verifier-select');
+  for (const o of select.options) o.text = o.text.replace(' ★','');
+  const opt = new Option(`${data.verifier.name} — ${data.verifier.position} ★`, data.verifier.id, true, true);
+  opt.dataset.position = data.verifier.position;
+  select.add(opt);
+  document.getElementById('new-verifier-name').value='';
+  document.getElementById('new-verifier-position').value='';
+  toggleAddVerifier();
+}
+
+async function setDefaultVerifier(quiet=false) {
+  const select = document.getElementById('verifier-select');
+  const id = select.value;
+  if (!id) { if (!quiet) alert('Select a verifier first.'); return; }
+  const res = await fetch(`/dtr/verifiers/${id}/default`,{method:'POST'});
+  if (!res.ok) { if (!quiet) alert('Unable to set verifier.'); return; }
+  for (const o of select.options) o.text = o.text.replace(' ★','');
+  select.options[select.selectedIndex].text += ' ★';
+}
+
+let auditLoaded = false;
+function toggleAudit() {
+  const panel = document.getElementById('audit-panel');
+  panel.classList.toggle('d-none');
+  if (!auditLoaded) { loadAudit(); auditLoaded=true; }
+}
+async function loadAudit() {
+  const res = await fetch(`/dtr/audit?employee_id=${EMPLOYEE_ID}`);
+  const logs = await res.json();
+  const tbody = document.getElementById('audit-body');
+  tbody.innerHTML = renderAuditRows(logs);
+}
+</script>
+{% endblock %}
