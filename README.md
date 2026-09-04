@@ -1,224 +1,376 @@
 # CSC Form 48 DTR System
 
-This app is a simple web system that helps you manage employee daily time records (DTR) and prepare CSC Form 48 reports.
+This program helps HR staff prepare employee Daily Time Records and CSC Form 48
+reports.
 
 You can use it to:
 
-- upload employee attendance files in `.dat` format or Excel 97-2003 `.xls` format,
-- create employee records in the system,
-- match each employee ID from the `.dat` file to the correct employee in the app,
-- view the generated DTR entries for each employee,
-- fix or edit values when needed,
-- export the final Form 48 PDF.
+- register employees,
+- import attendance from a biometric `.dat` file,
+- import an Excel 97-2003 `.xls` attendance report,
+- review and correct time entries,
+- keep a record of manual corrections, and
+- create individual or batch Form 48 PDF files.
 
-The app runs on your computer and stores data locally in SQLite.
+Everything is stored only on the computer where the program is running.
 
-## What this system is for
+> **Important:** This program has no login page. Use it only on your own computer
+> at `http://127.0.0.1:8000`. Do not make it publicly accessible on the internet.
 
-This is not only a PDF tool. It is a full DTR workflow system.
+## What you need
 
-The usual flow is:
+This guide is for a **64-bit Windows 10 or Windows 11 computer**. Before
+installing the program, you need:
 
-1. Add employees in the Employees page.
-2. Upload the attendance `.dat` file, or import the biometric software's `.xls` Logs report.
-3. The system reads the employee ID from the file and connects it to the matching employee record.
-4. The app converts the raw time logs into DTR slots.
-5. You review and edit the DTR grid if needed.
-6. You export the monthly CSC Form 48 PDF.
+- an internet connection for the first installation,
+- permission to install programs,
+- Python 3.10 or newer,
+- Git for Windows,
+- MSYS2 and Pango for creating PDF files, and
+- a web browser such as Chrome, Edge, Firefox, or Safari.
 
-## Before you start
+You do not need to install a separate database. Python already includes the
+SQLite database used by this program.
 
-Make sure your computer has the following installed:
+## Windows installation
 
-- Python 3.10 or newer
-- `pip`
-- a terminal or command prompt
-- a web browser
+You do **not** need Docker or a separate database.
 
-You should also know the folder where you saved this project.
+### Step 1: Install Python
 
-## Install Python
+1. Open the **Microsoft Store**.
+2. Search for **Python 3.13** and install it.
+3. Close the Microsoft Store when installation finishes.
 
-### Windows
+### Step 2: Install Git
 
-1. Open your browser and go to the official Python download page:
-   https://www.python.org/downloads/
-2. Download the latest Python 3 release for Windows.
-3. Run the installer.
-4. Important: check the box that says "Add Python to PATH" before you click Install.
-5. After installation, open Command Prompt and verify Python is installed:
+1. Download [Git for Windows](https://git-scm.com/download/win).
+2. Open the downloaded installer.
+3. Keep the recommended settings and complete the installation.
 
-```cmd
+### Step 3: Install the PDF requirements
+
+The system uses Pango to create Form 48 PDF files.
+
+1. Download [MSYS2](https://www.msys2.org/).
+2. Open the installer and keep its default installation folder:
+   `C:\msys64`.
+3. After installation, open **MSYS2 UCRT64** from the Start menu. Make sure the
+   window title includes `UCRT64`.
+4. Paste this command into that window and press Enter:
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-pango
+```
+
+5. Press `Y`, then Enter, when asked to continue.
+6. Wait for the installation to finish, then close the MSYS2 window.
+
+### Step 4: Open PowerShell and check the installations
+
+1. Open the Start menu, search for **PowerShell**, and open it normally.
+2. Run these commands one at a time:
+
+```powershell
 python --version
 ```
 
-If that works, you can continue.
-
-### macOS
-
-1. Open your browser and go to the official Python download page:
-   https://www.python.org/downloads/
-2. Download the latest Python 3 release for macOS.
-3. Run the installer and follow the steps.
-4. Open Terminal and verify Python is installed:
-
-```bash
-python3 --version
+```powershell
+git --version
 ```
 
-If that works, you can continue.
+Both commands should display a version number. If a command is not recognized,
+restart the computer and try again.
 
-## Setup instructions
+### Step 5: Download the DTR system
 
-Open your terminal and go to the project folder.
-
-```bash
-cd <project-folder>
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-If you are using Windows PowerShell, the activation command is usually:
+In PowerShell, run these commands one at a time:
 
 ```powershell
-.\venv\Scripts\Activate.ps1
+cd $HOME\Documents
 ```
 
-## Run the system in the browser
-
-After the packages are installed, start the app with:
-
-```bash
-uvicorn main:app --reload
+```powershell
+git clone https://github.com/devCharuzu/dtrsystemlocal.git
 ```
 
-Then open this address in your browser:
+```powershell
+cd dtrsystemlocal
+```
+
+### Step 6: Install the DTR system
+
+Continue in the same PowerShell window:
+
+```powershell
+python -m venv .venv
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Check that PDF support is ready:
+
+```powershell
+.\.venv\Scripts\python.exe -m weasyprint --info
+```
+
+If this displays WeasyPrint and system information without an error, the
+installation is complete.
+
+## Start the DTR system
+
+You must start the program each time you want to use it.
+
+1. Open **PowerShell** from the Start menu.
+2. Run these commands:
+
+```powershell
+cd $HOME\Documents\dtrsystemlocal
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+When PowerShell displays `Uvicorn running on http://127.0.0.1:8000`, open this
+address in your browser:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-## Very important: the employee ID must match
+Keep the PowerShell window open while using the program.
 
-This is the key step that makes the system work correctly.
+To stop the program, return to PowerShell and press `Ctrl+C`.
 
-The `.dat` attendance file contains an employee number in each line. The app reads that number and looks for the same employee number in the system.
+## First-time setup
 
-If the employee ID in the `.dat` file does not match the employee record you created in the app, the attendance data will not be connected to that employee.
+The program automatically creates these local items the first time it starts:
 
-### Matching rule
+- `form48.db` — employee and attendance records,
+- `dat_uploads` — uploaded `.dat` files, and
+- `xls_uploads` — uploaded `.xls` files.
 
-- The employee number in the `.dat` file must match the employee record in the system.
-- Leading zeroes are handled automatically, so `00012` and `12` are treated as the same number.
-- Always create the employee first before uploading the file.
+Do not delete these items if you want to keep your records.
 
-### Example
+## How to use the DTR system
 
-If your `.dat` file contains this employee ID:
+### 1. Register the employees
+
+Register employees before importing an attendance file.
+
+1. Open **Employees** from the top menu.
+2. Enter the employee number.
+3. Enter the employee's full name.
+4. Enter the position and office or division.
+5. Choose **Permanent** or **COS/JO**.
+6. Select **Save Employee**.
+7. Repeat these steps for every employee.
+
+The employee number must match the number used by the biometric device. Leading
+zeroes do not matter: `00012` and `12` are treated as the same number.
+
+### 2. Import attendance
+
+Use either a DAT file or an Excel file.
+
+#### Option A: Import a DAT file
+
+1. Open **Upload DAT**.
+2. Click the upload area and choose the `.dat` file from the biometric device.
+   You can also drag the file into the upload area.
+3. Select **Upload & Process**.
+4. Wait for the result.
+5. Review the number of parsed records, skipped records, collisions, and
+   unmatched employees.
+
+#### Option B: Import an Excel file
+
+The system accepts only the older Excel `.xls` format.
+
+1. In the biometric software, export the **List of Logs** report.
+2. Save it as **Excel 97-2003 Workbook (`.xls`)**.
+3. Make sure the workbook contains a sheet named `Logs`.
+4. Open **Import Excel** in the DTR system.
+5. Choose the `.xls` file.
+6. Select **Upload & Process**.
+7. Review the employee matches before using the DTR results.
+
+An `.xlsx` file will not work. Open it in Microsoft Excel or LibreOffice and use
+**Save As → Excel 97-2003 Workbook (`.xls`)**.
+
+If the name and employee number point to two different employees, the system
+will skip that row and show a conflict. Correct the employee information before
+trying again.
+
+### 3. Resolve import problems
+
+- **Unmatched employee:** Add the missing employee or correct the employee
+  number in the Employees page.
+- **Conflicting employee:** Check both the name and employee number. They must
+  identify the same person.
+- **Collision:** The employee made two very close scans. Review the red blank
+  cell and enter the correct time manually.
+- **Duplicate filename:** The filename was previously imported. Confirm that
+  you selected the correct file. Give a genuinely new export a unique filename.
+
+### 4. Review the DTR
+
+1. Open **DTR Grid**.
+2. Choose the correct year and month.
+3. Choose a period:
+   - **1–15** for the first COS/JO period,
+   - **16–End** for the second COS/JO period, or
+   - **Full Month** for permanent employees.
+4. Select **Open DTR Grid**.
+5. Review the AM arrival, AM departure, PM arrival, and PM departure entries.
+6. Use **Prev** and **Next** to review the other employees.
+
+### 5. Correct a time entry
+
+1. Double-click the weekday cell you want to change.
+2. Enter the time using 12-hour `H:MM` format.
+   Examples: `8:05`, `12:10`, or `5:02`.
+3. Press Enter or click outside the cell.
+4. Wait for the green saved message.
+
+Only successfully saved changes appear in the audit log. If a save fails, the
+cell returns to its previous value so you can try again.
+
+### 6. Add or select a verifier
+
+1. Open an employee's DTR Grid.
+2. Choose an existing verifier from the **Verifier** list.
+3. To add one, select **Add verifier**.
+4. Enter the verifier's name and designation, then save.
+5. Use **Set Default** if that person should be selected automatically.
+
+### 7. Export the Form 48 PDF
+
+For one employee:
+
+1. Open that employee's DTR Grid.
+2. Check the period, time entries, and verifier.
+3. Select **Export PDF**.
+4. Review the preview and download the file.
+
+For multiple employees:
+
+1. Return to **DTR Grid**.
+2. Choose `1–15`, `16–End`, or `Full Month`.
+3. Select **Batch Export**.
+4. Wait while the combined PDF is created.
+
+## Back up your records
+
+Attendance records may contain personal information. Keep backups in a secure
+location.
+
+1. Stop the program by pressing `Ctrl+C` in PowerShell.
+2. Open the `dtrsystemlocal` folder.
+3. Copy these items to a secure USB drive or backup folder:
 
 ```text
-00012
+form48.db
+dat_uploads
+xls_uploads
 ```
 
-then create an employee in the app with the same number, such as:
+To restore the backup, stop the program and copy those items back into the
+`dtrsystemlocal` folder.
 
-- `employee_number = 00012` or `12`
-- `full_name = <employee name>`
+## Update the program without losing records
 
-Once the numbers match, the system can fetch and show the time data correctly.
+1. Back up the three items listed above.
+2. Stop the running program.
+3. Open PowerShell.
+4. Enter the program folder:
 
-## Step-by-step tutorial
+```powershell
+cd $HOME\Documents\dtrsystemlocal
+```
 
-### 1. Create employees first
+5. Download the update and refresh the required packages:
 
-Go to the Employees page and add each employee.
+```powershell
+git pull --ff-only
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-Enter these details:
+6. Start the program again:
 
-- employee number
-- full name
-- position
-- office or division
-- employment type
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
 
-Make sure the employee number matches the ID in the attendance `.dat` file.
+Updates do not include or remove your local database and attendance files.
 
-### 2. Upload the attendance file
+## Common problems
 
-Go to the Dat Logs page to upload a `.dat` file, or use Import Excel for a biometric
-software `.xls` report containing a `Logs` sheet.
+### The browser says the page cannot be reached
 
-The system will:
+- Make sure the PowerShell window is still open.
+- Check that it says `Uvicorn running on http://127.0.0.1:8000`.
+- Open exactly `http://127.0.0.1:8000` in the browser.
+- If the program stopped, start it again using the instructions above.
 
-- save the file locally,
-- read the attendance lines,
-- match the employee IDs,
-- create the DTR entries.
+### `python` or `git` is not recognized
 
-### 3. Check if any employee IDs are unmatched
+The required program was not installed correctly, or PowerShell was open during
+installation. Close PowerShell, open it again, and retry. If it still fails,
+restart Windows and repeat the relevant installation step.
 
-If an ID is not found in the employee list, the app will not attach the time data to that person.
+### `No module named ...`
 
-In that case:
+Open PowerShell in the program folder and reinstall the required packages:
 
-- create the missing employee record, or
-- edit the employee number so it matches the `.dat` file.
+```powershell
+cd $HOME\Documents\dtrsystemlocal
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-### 4. Open the DTR page
+### PDF export does not work
 
-After the upload, go to the DTR page.
+Check that WeasyPrint can start:
 
-Choose the employee, month, and date range to review the entries.
+```powershell
+cd $HOME\Documents\dtrsystemlocal
+.\.venv\Scripts\python.exe -m weasyprint --info
+```
 
-You will see the time slots for:
+If this reports a Pango or missing-library error:
 
-- AM IN
-- AM OUT
-- PM IN
-- PM OUT
+1. Confirm that MSYS2 is installed in `C:\msys64`.
+2. Open **MSYS2 UCRT64** from the Start menu.
+3. Run `pacman -S mingw-w64-ucrt-x86_64-pango` again.
+4. Close MSYS2 and PowerShell, reopen PowerShell, and retry the check.
 
-### 5. Edit the DTR if needed
+### Port 8000 is already being used
 
-Some entries may be wrong or flagged because of duplicate or unusual punches.
+Start the program on port 8001:
 
-You can correct them in the grid.
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8001
+```
 
-Every change is tracked in the audit log.
+Then open `http://127.0.0.1:8001`.
 
-### 6. Export the Form 48 PDF
+### PowerShell says script execution is disabled
 
-Once the DTR is correct, export the report as a PDF.
+The commands in this guide do not activate a PowerShell script. Make sure you
+typed `.\.venv\Scripts\python.exe` exactly as shown instead of running
+`Activate.ps1`.
 
-This final PDF is the output you can print or submit.
+## Data privacy when using Git
 
-## Simple workflow
+The database, uploaded attendance files, PDF files, and environment files are
+excluded from normal Git commits. Before pushing an update, always run:
 
-A good workflow is:
+```bash
+git status
+```
 
-1. Create all employee records.
-2. Confirm that each employee number matches the `.dat` file.
-3. Upload the `.dat` file.
-4. Review the upload result.
-5. Fix any unmatched or wrong employee IDs.
-6. Open the DTR page and check the records.
-7. Edit any incorrect entries.
-8. Export the PDF.
-
-## Main files in the project
-
-- `main.py` starts the FastAPI app
-- `database.py` sets up the local SQLite database
-- `models.py` defines the employee and DTR database tables
-- `services/dat_parser.py` reads and resolves the `.dat` file
-- `routers/employees.py` handles employee creation and editing
-- `routers/datlogs.py` handles `.dat` upload and storage
-- `routers/xlslogs.py` handles `.xls` upload and storage
-- `routers/dtr.py` handles the DTR grid and PDF export
-
-## Notes
-
-- The system creates its own local database called `form48.db`.
-- Uploaded files are stored locally in `dat_uploads/` and `xls_uploads/`.
-- The database and uploaded attendance files are intentionally excluded from Git.
-- The matching of employee IDs is the most important part of the import process.
+Do not use `git add -f` on `form48.db`, `dat_uploads`, or `xls_uploads`.
